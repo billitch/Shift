@@ -318,7 +318,7 @@ var globals = {
 
   shift: {
     version: "0.9.8",
-    updateTorrents: newPeriodicalUpdater( "torrent-get", 2, function( response ) {
+    updateTorrents: newPeriodicalUpdater( "torrent-get", 4, function( response ) {
       var arguments = getArguments( response );
 
       if ( arguments.removed && arguments.removed.length > 0 ) {
@@ -337,7 +337,7 @@ var globals = {
       }
     }, {}, "recently-active" ),
 
-    updateStats: newPeriodicalUpdater( "session-stats", 5, function( response ) {
+    updateStats: newPeriodicalUpdater( "session-stats", 10, function( response ) {
       updateFields( globals.shift.sessionStats = getArguments( response ) );
       renderTitle();
     } ),
