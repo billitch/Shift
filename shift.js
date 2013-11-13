@@ -307,7 +307,7 @@ var globals = {
       keyCode: 85
     }
   },
-  torrentStatusDefault: 4,
+  torrentStatusDefault: -1,
   headerState: 0,
   magnets: [],
   torrents: [],
