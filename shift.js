@@ -253,14 +253,14 @@ var globals = {
   torrentStatus: {
     "-1": {
       label: "All",
-      columns: [ "menu", "queuePosition", "status", "percentDone", "rateDownload", "rateUpload", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "percentDone", "rateDownload", "rateUpload", "eta", "uploadedEver" ],
+      columns: [ "menu", "queuePosition", "status", "percentDone", "rateDownload", "rateUpload", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "percentDone", "rateDownload", "rateUpload", "eta", "uploadedEver", "trackers" ],
       keyCode: 65
     },
     0: {
       label: "Stopped",
-      columns: [ "menu", "queuePosition", "status", "errorString", "percentDone", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "error" ],
+      columns: [ "menu", "queuePosition", "status", "errorString", "percentDone", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "error", "trackers" ],
       keyCode: 83,
       onChange: function() {
         changeRequest( globals.shift.torrentUpdater, "torrent-get", {
@@ -275,35 +275,35 @@ var globals = {
     },
     1: {
       label: "Check waiting",
-      columns: [ "menu", "queuePosition", "status", "percentDone", "corruptEver", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "percentDone", "corruptEver" ]
+      columns: [ "menu", "queuePosition", "status", "percentDone", "corruptEver", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "percentDone", "corruptEver", "trackers" ]
     },
     2: {
       label: "Checking",
-      columns: [ "menu", "queuePosition", "status", "percentDone", "recheckProgress", "corruptEver", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "percentDone", "recheckProgress", "corruptEver" ],
+      columns: [ "menu", "queuePosition", "status", "percentDone", "recheckProgress", "corruptEver", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "percentDone", "recheckProgress", "corruptEver", "trackers" ],
       keyCode: 67
     },
     3: {
       label: "Download waiting",
-      columns: [ "menu", "queuePosition", "status", "percentDone", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "percentDone" ]
+      columns: [ "menu", "queuePosition", "status", "percentDone", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "percentDone", "trackers" ]
     },
     4: {
       label: "Downloading",
-      columns: [ "menu", "queuePosition", "status", "percentDone", "rateDownload", "rateUpload", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "percentDone", "rateDownload", "rateUpload", "uploadedEver", "eta" ],
+      columns: [ "menu", "queuePosition", "status", "percentDone", "rateDownload", "rateUpload", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "percentDone", "rateDownload", "rateUpload", "uploadedEver", "eta", "trackers" ],
       keyCode: 68
     },
     5: {
       label: "Seed waiting",
-      columns: [ "menu", "queuePosition", "status", "percentDone", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "percentDone" ]
+      columns: [ "menu", "queuePosition", "status", "percentDone", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "percentDone", "trackers" ]
     },
     6: {
       label: "Seeding",
-      columns: [ "menu", "queuePosition", "status", "rateUpload", "uploadedEver", "uploadRatio", "sizeWhenDone", "name" ],
-      fields: [ "id", "status", "rateUpload", "uploadedEver", "uploadRatio" ],
+      columns: [ "menu", "queuePosition", "status", "rateUpload", "uploadedEver", "uploadRatio", "sizeWhenDone", "name", "trackers" ],
+      fields: [ "id", "status", "rateUpload", "uploadedEver", "uploadRatio", "trackers" ],
       keyCode: 85
     }
   },
@@ -719,7 +719,22 @@ var torrentColumns = {
         return null == torrent.name || ( this.isRegExp ? this.value.test( torrent.name ) : torrent.name.toLowerCase().include( this.value ) );
       }
     }
-  }
+  },
+
+  "trackers": {
+    label: "Trackers", readOnly: true, render: renderTrackers, filter: {
+      active: true, value: "", renderNode: renderTrackersFilter, match: function( torrent ) {
+        if (!torrent.trackers || this.value == "") return true;
+        var inverse = (this.value[0] == "!") ? this.value.slice(1) : false;
+        for (var i = 0; i < torrent.trackers.length; i++) {
+          if (torrent.trackers[i] && torrent.trackers[i].announce.toLowerCase().include( inverse || this.value )) return inverse ? false : true;
+        }
+        return inverse ? true : false;
+      }
+    }
+  },
+
+  "eta": { render: false }
 }
 
 globals.torrentColumnHash = Object.values( torrentColumns );
@@ -989,6 +1004,31 @@ function rLink( href, text, attributes ) {
   return rE( "a", Object.extend( { href: href, target: "_blank" }, attributes ), text == null ? unescape( href ) : text );
 }
 
+function renderTrackers( trackers, torrent, ignore, cell ) {
+  var div = rE("div");
+  var icon = { domain: null, next: null };
+  if (!trackers)
+    trackers = [];
+  for (var i = 0; i < trackers.length; i++) {
+    var domain = trackers[i].announce.match(/\/\/(?:[^\/.:]+\.)*([^\/.:]+\.[^\/.:]+)(?:[\/.:]|$)/)[1];
+    var j = icon;
+    while (j.next && j.next.domain <= domain)
+      j = j.next;
+    if (j.domain == domain)
+      j.title += "\n"+trackers[i].announce;
+    else
+      j.next = { domain: domain,
+		 src: domain ? 'http://'+domain+'/favicon.ico' : undefined,
+		 alt: domain ? domain[0] : '?',
+		 title: trackers[i].announce,
+		 next: j.next };
+  }
+  while ((icon = icon.next))
+    div.insert(rE("img", { alt: icon.alt, 'class': 'favicon',
+			   src: icon.src, title: icon.title }));
+  return div;
+}
+
 function renderName( name, torrent, ignore, cell ) {
   return ( torrent.eta == -2 && torrent.sizeWhenDone === 0 && torrent.hashString ? "magnet#" + torrent.hashString + ": " : "" ) + name;
 }
@@ -1129,6 +1169,21 @@ function renderSizeFilter() {
   var f = renderFilter( "Size" );
   f.down( "span.filterInput" ).insert( select ).insert( input );
   return f;
+}
+
+function renderTrackersFilter() {
+  var filter = torrentColumns.trackers.filter;
+  var input = rInput( filter.value, { id: "trackersInput" } );
+  var handler = function( event ) {
+    filter.value = input.value.toLowerCase();
+    filterTorrents();
+  };
+  var apply = rButton();
+  input.observe( "change", handler );
+  input.observe( "blur", handler );
+  apply.observe( "click", handler );
+
+  return rE( "div", { "class": "filter"} ).hide().insert( "Trackers: " ).insert( input ).insert( apply );
 }
 
 var noMatchRegExp = new RegExp( "\0" );

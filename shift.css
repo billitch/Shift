@@ -397,6 +397,10 @@ col.status {
   width: 120px;
 }
 
+col.trackers {
+  width: 92px;
+}
+
 td[readonly] {
   color: #333333;
 }
@@ -413,6 +417,20 @@ table#peerTable tbody tr td.address, table#peerTable tbody tr td.clientName, tab
 
 table#torrentTable tbody tr td.name, table#torrentTable tbody tr td.status {
   text-align: left;
+}
+
+td.trackers {
+  padding-right: 0;
+}
+
+td.trackers a {
+  text-decoration: none;
+}
+
+td.trackers img {
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
 }
 
 table#detailsTable input {
