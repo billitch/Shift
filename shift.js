@@ -1808,13 +1808,22 @@ function rFolder( base, fileParts, filePartIndex ) {
 function renderFiles( torrent ) {
   var torrentDone = 1 == torrent.percentDone;
 
-  var folderLink = globals.shift.settings.folderLinkEnabled ? globals.shift.settings.folderLink : null;
-  if ( !torrentDone && globals.shift.session["incomplete-dir-enabled"] ) {
-    folderLink = globals.shift.settings.incompleteFolderLinkEnabled ? globals.shift.settings.incompleteFolderLink : null;
+  var prefixDir = "";
+  if (globals.shift.settings.folderLinkEnabled || globals.shift.settings.incompleteFolderLinkEnabled || globals.shift.settings.fileLinkEnabled) {
+    var downloadDir = globals.shift.session['download-dir'];
+    if (downloadDir[downloadDir.length - 1] != '/')
+      downloadDir = downloadDir + '/';
+    if (torrent.downloadDir.length > downloadDir.length && torrent.downloadDir.lastIndexOf(downloadDir, 0) == 0)
+      prefixDir = '/' + torrent.downloadDir.slice(downloadDir.length) + '/';
   }
 
-  var fileLink = globals.shift.settings.fileLinkEnabled ? globals.shift.settings.fileLink : null;
-  var incompleteFileLink = globals.shift.settings.incompleteFolderLinkEnabled ? globals.shift.settings.incompleteFolderLink : null;
+  var folderLink = globals.shift.settings.folderLinkEnabled ? globals.shift.settings.folderLink + prefixDir : null;
+  if ( !torrentDone && globals.shift.session["incomplete-dir-enabled"] ) {
+    folderLink = globals.shift.settings.incompleteFolderLinkEnabled ? globals.shift.settings.incompleteFolderLink + prefixDir : null;
+  }
+
+  var fileLink = globals.shift.settings.fileLinkEnabled ? globals.shift.settings.fileLink + prefixDir : null;
+  var incompleteFileLink = globals.shift.settings.incompleteFolderLinkEnabled ? globals.shift.settings.incompleteFolderLink + prefixDir : null;
   var extension = globals.shift.session["rename-partial-files"] ? ".part" : "";
 
   var currentNode = $( "fileBody" ).down();
